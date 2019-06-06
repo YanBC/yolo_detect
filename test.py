@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from nn import YoloV3
 import argparse
 import yaml
