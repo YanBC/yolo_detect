@@ -342,6 +342,7 @@ if __name__ == '__main__':
     import pickle
     import shutil
     import sys
+    import hashlib
 
     parser = argparse.ArgumentParser(description='YOLO Detection Evaluation')
     parser.add_argument('dirPath', help='Path to yolo annotation directory')
@@ -379,10 +380,20 @@ if __name__ == '__main__':
 
     if os.path.isfile(os.path.join(cachDir, 'cach.pkl')):
         with open(os.path.join(cachDir, 'cach.pkl'), 'br') as f:
+            old_configHash = pickle.load(f)
             old_imageDir = pickle.load(f)
             old_annos = pickle.load(f)
             old_preds = pickle.load(f)
-    if old_imageDir == imageDir:
+
+    # get current config file's sha256 digest
+    with open(configPath, 'rb') as f:
+        sh = hashlib.sha256()
+        sh.update(f.read())
+        configHash = sh.hexdigest()
+
+    # if image directory and config file are the same, there's no need
+    # to calculate annos and preds; otherwise, do it all over again
+    if old_imageDir == imageDir and old_configHash == configHash:
         annos = old_annos
         preds = old_preds
     else:
@@ -402,6 +413,7 @@ if __name__ == '__main__':
             shutil.rmtree(cachDir)
         os.mkdir(cachDir)
         with open(os.path.join(cachDir, cachFile), 'bw') as f:
+            pickle.dump(configHash, f)
             pickle.dump(imageDir, f)
             pickle.dump(annos, f)
             pickle.dump(preds, f)
